@@ -90,8 +90,8 @@ def restart_survey():
 
 # 1. 시작 화면
 if st.session_state.page == 'start':
-    if os.path.exists("start.jpg"):
-        image = Image.open("start.jpg")
+    if os.path.exists("start.png"):
+        image = Image.open("start.png")
         st.image(image, use_container_width=True)
     else:
         st.warning("start.jpg 파일이 없습니다. 이미지를 추가해주세요.")
@@ -144,9 +144,6 @@ elif st.session_state.page == 'question':
 elif st.session_state.page == 'result':
     total_score = st.session_state.score
     
-    # 점수 출력
-    st.markdown(f"<h3 style='text-align: center; margin-bottom: 10px;'>당신의 총 점수는 {total_score}점 입니다.</h3>", unsafe_allow_html=True)
-
     # 점수 기준별 결과 이미지 매칭
     result_img_path = ""
     if total_score >= 22:
