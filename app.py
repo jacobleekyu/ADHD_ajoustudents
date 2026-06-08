@@ -3,57 +3,32 @@ from PIL import Image
 import os
 
 # --- 페이지 기본 설정 ---
-st.set_page_config(page_title="ADHD 설문", layout="centered")
+st.set_page_config(page_title="ADHD 성향 설문", layout="centered")
 
-# --- CSS 스타일링 (핵심: 이미지 높이 제한 & 간격 삭제) ---
+# --- CSS 스타일링 ---
 st.markdown("""
     <style>
-    /* 1. 배경 및 기본 여백 제거 */
-    .stApp { background-color: #FDFBF7; padding: 0px !important; }
+    /* 1. 배경색 아이보리 고정 */
+    .stApp { background-color: #FDFBF7; }
     
-    /* 2. 전체 컨테이너를 화면 꽉 차게 설정 */
+    /* 2. 상단바 숨김 및 여백 조정 */
+    header { visibility: hidden; }
+    
     .block-container {
-        padding: 10px !important;
-        max-width: 400px !important; 
+        padding: 1rem !important;
+        max-width: 450px !important; 
         margin: 0 auto !important; 
-        height: 100vh !important;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        overflow: hidden;
     }
 
-    /* 3. 🔥 사진 크기 강제 조절: 화면의 35%까지만 차지하도록 설정 */
-    div[data-testid="stImage"] {
-        display: flex;
-        justify-content: center;
-        margin: 0px !important;
-    }
-    div[data-testid="stImage"] img {
-        max-height: 35vh !important; /* 사진이 너무 커지지 않게 제한 */
-        object-fit: contain !important;
-        border-radius: 15px;
-    }
-
-    /* 4. 질문 텍스트 크기 및 간격 */
+    /* 3. 질문 텍스트 스타일 */
     h4 {
-        margin: 5px 0 !important;
-        padding: 0 !important;
+        margin: 10px 0 !important;
         font-size: 16px !important;
         text-align: center;
         color: #333 !important;
     }
 
-    /* 5. 버튼 4등분 및 간격 밀착 */
-    div[data-testid="stHorizontalBlock"] {
-        gap: 4px !important; 
-        margin-top: 5px !important;
-    }
-    div[data-testid="column"] {
-        padding: 0 !important;
-    }
-
-    /* 6. 동그란 알약 버튼 */
+    /* 4. 버튼 디자인 (깔끔한 알약 형태) */
     div.stButton > button {
         border-radius: 50px !important;
         height: 50px !important;
@@ -62,10 +37,14 @@ st.markdown("""
         font-weight: bold;
         background-color: white !important;
         border: 1px solid #ddd !important;
+        color: #333 !important;
     }
     
-    /* 진행도 바 높이 축소 */
-    div[data-testid="stProgress"] { height: 4px !important; margin-bottom: 5px !important; }
+    /* 버튼 호버/클릭 효과 */
+    div.stButton > button:active { border-color: #8BC34A !important; color: #8BC34A !important; }
+
+    /* 진행도 바 디자인 */
+    div[data-testid="stProgress"] { height: 4px !important; margin-bottom: 10px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -96,19 +75,24 @@ def go_next(points):
     st.rerun()
 
 # --- 화면 ---
+# 1. 시작 화면 (원본 비율 유지)
 if st.session_state.page == 'start':
-    if os.path.exists("start.png"): st.image("start.png", use_container_width=True)
+    if os.path.exists("start.png"): 
+        st.image("start.png", use_container_width=True)
     if st.button("🌱 시작하기"):
         st.session_state.page = 'question'
         st.rerun()
 
+# 2. 질문 화면 (간결하고 직관적인 배치)
 elif st.session_state.page == 'question':
     q = questions[st.session_state.current_q - 1]
     st.progress(st.session_state.current_q / 10)
-    if os.path.exists(q["img"]): st.image(q["img"], use_container_width=True)
+    if os.path.exists(q["img"]): 
+        st.image(q["img"], use_container_width=True)
     st.markdown(f"<h4>{q['text']}</h4>", unsafe_allow_html=True)
     
     cols = st.columns(4)
+    # 7번(한 주에 몇 번) 및 역문항 로직 적용
     if q["num"] == 7: labels, points = ["0~1", "2~3", "4~5", "6+"], [0, 1, 2, 3]
     elif q["num"] in [2, 5, 8]: labels, points = ["드물다", "보통", "자주", "매우 자주"], [0, 1, 2, 3]
     else: labels, points = ["매우 자주", "자주", "보통", "드물다"], [3, 2, 1, 0]
@@ -117,11 +101,12 @@ elif st.session_state.page == 'question':
         with col:
             if st.button(labels[i]): go_next(points[i])
 
+# 3. 결과 화면 (점수 텍스트 제거, 원본 비율 유지)
 elif st.session_state.page == 'result':
-    total = st.session_state.score
-    st.markdown(f"### 총 점수: {total}점")
-    res = "final4.png" if total >= 22 else "final3.jpg" if total >= 17 else "final2.jpg" if total >= 12 else "final1.jpg"
-    if os.path.exists(res): st.image(res, use_container_width=True)
+    res = "final4.png" if st.session_state.score >= 22 else "final3.jpg" if st.session_state.score >= 17 else "final2.jpg" if st.session_state.score >= 12 else "final1.jpg"
+    if os.path.exists(res): 
+        st.image(res, use_container_width=True)
+    
     if st.button("🔄 다시 하기"): 
         st.session_state.score = 0
         st.session_state.current_q = 1
