@@ -5,29 +5,36 @@ import os
 # --- 페이지 기본 설정 ---
 st.set_page_config(page_title="ADHD 성향 설문", page_icon="🌱", layout="centered")
 
-# --- CSS 스타일링 (배경색, 여백 최소화 및 버튼 디자인) ---
+# --- CSS 스타일링 (모바일 화면 최적화 및 강제 가로 배열) ---
 st.markdown("""
     <style>
-    /* 1. 앱 전체 배경색을 자연스러운 연한 아이보리 톤으로 변경 */
     .stApp {
         background-color: #FDFBF7;
     }
 
-    /* 2. 상하좌우 흰색 여백을 대폭 줄여 화면을 꽉 차게 만듦 */
     .block-container {
         padding-top: 2rem !important;
         padding-bottom: 1rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
-        max-width: 600px; /* 이미지가 한눈에 예쁘게 들어오는 너비 */
+        max-width: 600px; 
     }
 
-    /* 3. 버튼을 둥글게 만들고 텍스트를 가운데 정렬 + 약간의 그림자 */
+    /* 🔥 핵심 수정: 모바일에서 세로로 떨어지는 현상 방지 (가로 배치 강제) */
+    div[data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap !important;
+        gap: 5px; /* 버튼 사이의 간격을 살짝 좁힘 */
+    }
+
+    /* 버튼 디자인 */
     div.stButton > button:first-child {
         border-radius: 30px;
         width: 100%;
         height: 50px;
         font-weight: bold;
+        font-size: 14px !important; /* 모바일에서 텍스트가 잘리지 않도록 크기 조정 */
+        padding: 0 !important; /* 버튼 내부 여백을 최소화하여 글씨 공간 확보 */
+        white-space: nowrap; /* 텍스트 줄바꿈 방지 */
         border: 2px solid #E0E0E0;
         background-color: white;
         color: #333333;
@@ -40,13 +47,11 @@ st.markdown("""
         background-color: #F1F8E9;
     }
 
-    /* 4. 이미지 주변의 미세한 기본 여백 제거 */
     div[data-testid="stImage"] {
         margin-bottom: -10px;
     }
     
-    /* 텍스트 요소들 색상을 배경과 어울리게 약간 부드럽게 조정 */
-    h1, h2, h3, p {
+    h1, h2, h3, h4, p {
         color: #2C2C2C !important;
     }
     </style>
@@ -90,11 +95,12 @@ def restart_survey():
 
 # 1. 시작 화면
 if st.session_state.page == 'start':
+    # start.png 로 수정 완료
     if os.path.exists("start.png"):
         image = Image.open("start.png")
         st.image(image, use_container_width=True)
     else:
-        st.warning("start.jpg 파일이 없습니다. 이미지를 추가해주세요.")
+        st.warning("start.png 파일이 없습니다. 이미지를 추가해주세요.")
     
     st.write("") 
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -119,6 +125,7 @@ elif st.session_state.page == 'question':
     
     st.write("") 
     
+    # 4개의 컬럼이 모바일에서도 무조건 가로로 유지됩니다.
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -144,6 +151,9 @@ elif st.session_state.page == 'question':
 elif st.session_state.page == 'result':
     total_score = st.session_state.score
     
+    # 점수 출력
+    st.markdown(f"<h3 style='text-align: center; margin-bottom: 10px;'>당신의 총 점수는 {total_score}점 입니다.</h3>", unsafe_allow_html=True)
+
     # 점수 기준별 결과 이미지 매칭
     result_img_path = ""
     if total_score >= 22:
