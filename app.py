@@ -3,86 +3,78 @@ from PIL import Image
 import os
 
 # --- 페이지 기본 설정 ---
-st.set_page_config(page_title="ADHD 성향 설문", page_icon="🌱", layout="centered")
+st.set_page_config(page_title="ADHD 설문", layout="centered")
 
-# --- CSS 스타일링 (여백 최소화 및 모바일 4등분 강제) ---
+# --- CSS 스타일링 (핵심: 이미지 높이 제한 & 간격 삭제) ---
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #FDFBF7;
-    }
-
-    /* 1. 화면 최대 너비와 기본 여백 설정 */
+    /* 1. 배경 및 기본 여백 제거 */
+    .stApp { background-color: #FDFBF7; padding: 0px !important; }
+    
+    /* 2. 전체 컨테이너를 화면 꽉 차게 설정 */
     .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 1rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-        max-width: 450px !important; 
+        padding: 10px !important;
+        max-width: 400px !important; 
         margin: 0 auto !important; 
+        height: 100vh !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
     }
 
-    /* 2. 버튼 4개가 들어가는 가로 블록의 간격을 완전히 없앰 */
-    div[data-testid="stHorizontalBlock"] {
-        gap: 0px !important; /* 버튼 사이 간격 0으로 밀착 */
-    }
-
-    /* 3. 모바일에서 4가지 버튼이 1줄에 딱 붙어서 나오도록 강제 */
-    @media (max-width: 600px) {
-        div[data-testid="stHorizontalBlock"] {
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-        }
-        div[data-testid="column"] {
-            width: 25% !important; /* 정확히 4등분 */
-            flex: 1 1 25% !important; 
-            min-width: 0 !important; 
-            padding: 0 2px !important; /* 버튼 좌우 여백을 최소화하여 서로 밀착 */
-        }
-    }
-
-    /* 4. 선택 버튼 디자인 (좁은 공간에 쏙 들어가도록) */
-    div.stButton > button:first-child {
-        border-radius: 30px;
-        width: 100%;
-        height: 45px;
-        font-weight: bold;
-        font-size: 12px !important; /* 글씨 크기를 살짝 줄여서 잘림 방지 */
-        padding: 0 !important; 
-        white-space: nowrap; 
-        border: 2px solid #E0E0E0;
-        background-color: white;
-        color: #333333;
-        transition: all 0.3s ease;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.05);
-    }
-    div.stButton > button:first-child:hover {
-        border-color: #8BC34A;
-        color: #8BC34A;
-        background-color: #F1F8E9;
-    }
-
-    /* 5. 사진 하단 여백 제거 */
+    /* 3. 🔥 사진 크기 강제 조절: 화면의 35%까지만 차지하도록 설정 */
     div[data-testid="stImage"] {
-        margin-bottom: 0px;
+        display: flex;
+        justify-content: center;
+        margin: 0px !important;
+    }
+    div[data-testid="stImage"] img {
+        max-height: 35vh !important; /* 사진이 너무 커지지 않게 제한 */
+        object-fit: contain !important;
+        border-radius: 15px;
+    }
+
+    /* 4. 질문 텍스트 크기 및 간격 */
+    h4 {
+        margin: 5px 0 !important;
+        padding: 0 !important;
+        font-size: 16px !important;
+        text-align: center;
+        color: #333 !important;
+    }
+
+    /* 5. 버튼 4등분 및 간격 밀착 */
+    div[data-testid="stHorizontalBlock"] {
+        gap: 4px !important; 
+        margin-top: 5px !important;
+    }
+    div[data-testid="column"] {
+        padding: 0 !important;
+    }
+
+    /* 6. 동그란 알약 버튼 */
+    div.stButton > button {
+        border-radius: 50px !important;
+        height: 50px !important;
+        width: 100% !important;
+        font-size: 13px !important;
+        font-weight: bold;
+        background-color: white !important;
+        border: 1px solid #ddd !important;
     }
     
-    h1, h2, h3, h4, p {
-        color: #2C2C2C !important;
-    }
+    /* 진행도 바 높이 축소 */
+    div[data-testid="stProgress"] { height: 4px !important; margin-bottom: 5px !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 세션 상태(Session State) 초기화 ---
-if 'page' not in st.session_state:
-    st.session_state.page = 'start'
-if 'score' not in st.session_state:
-    st.session_state.score = 0
-if 'current_q' not in st.session_state:
-    st.session_state.current_q = 1
+# --- 세션 상태 ---
+if 'page' not in st.session_state: st.session_state.page = 'start'
+if 'score' not in st.session_state: st.session_state.score = 0
+if 'current_q' not in st.session_state: st.session_state.current_q = 1
 
-# --- 질문 데이터 리스트 ---
-# 7번 질문 텍스트 수정됨
+# --- 질문 데이터 ---
 questions = [
     {"num": 1, "text": "1. 당신은 제출보다 사소한 수정에 집착한 적이 얼마나 자주 있나요?", "img": "q1.jpg"},
     {"num": 2, "text": "2. 해야 할 일의 우선순위 정리가 어려웠던 적이 얼마나 자주 있나요?", "img": "q2.jpg"},
@@ -96,102 +88,42 @@ questions = [
     {"num": 10, "text": "10. 상대방의 설명이 끝나기 전에 먼저 결론을 말하거나 끼어든 적이 얼마나 자주 있나요?", "img": "q10.jpg"}
 ]
 
-# --- 함수 모음 ---
-def go_to_next_question(points):
+# --- 로직 ---
+def go_next(points):
     st.session_state.score += points
     st.session_state.current_q += 1
-    if st.session_state.current_q > 10:
-        st.session_state.page = 'result'
+    if st.session_state.current_q > 10: st.session_state.page = 'result'
+    st.rerun()
 
-def restart_survey():
-    st.session_state.page = 'start'
-    st.session_state.score = 0
-    st.session_state.current_q = 1
-
-# --- 화면 렌더링 로직 ---
-
-# 1. 시작 화면
+# --- 화면 ---
 if st.session_state.page == 'start':
-    if os.path.exists("start.png"):
-        image = Image.open("start.png")
-        st.image(image, use_container_width=True)
-    else:
-        st.warning("start.png 파일이 없습니다. 이미지를 추가해주세요.")
-    
-    st.write("") 
-    
-    if st.button("🌱 시작하려면 클릭하세요!", key="start_btn", use_container_width=True):
+    if os.path.exists("start.png"): st.image("start.png", use_container_width=True)
+    if st.button("🌱 시작하기"):
         st.session_state.page = 'question'
         st.rerun()
 
-# 2. 질문 화면
 elif st.session_state.page == 'question':
-    q_index = st.session_state.current_q - 1
-    current_question = questions[q_index]
-    
-    st.markdown(f"<h4 style='text-align: center; margin-bottom: 5px;'>{current_question['text']}</h4>", unsafe_allow_html=True)
-    
-    img_path = current_question["img"]
-    if os.path.exists(img_path):
-        image = Image.open(img_path)
-        st.image(image, use_container_width=True)
-    else:
-        st.info(f"[{img_path}] 이미지를 준비 중입니다.")
-    
-    st.write("") 
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    # 7번 질문일 경우 선택지 다르게 표시
-    if current_question["num"] == 7:
-        btn_labels = ["6+", "4~5", "2~3", "0~1"]
-    else:
-        btn_labels = ["매우 자주", "자주", "보통", "드물다"]
-    
-    with col1:
-        if st.button(btn_labels[0], key=f"btn3_{q_index}"):
-            go_to_next_question(3)
-            st.rerun()
-    with col2:
-        if st.button(btn_labels[1], key=f"btn2_{q_index}"):
-            go_to_next_question(2)
-            st.rerun()
-    with col3:
-        if st.button(btn_labels[2], key=f"btn1_{q_index}"):
-            go_to_next_question(1)
-            st.rerun()
-    with col4:
-        if st.button(btn_labels[3], key=f"btn0_{q_index}"):
-            go_to_next_question(0)
-            st.rerun()
-            
-    st.write("")
+    q = questions[st.session_state.current_q - 1]
     st.progress(st.session_state.current_q / 10)
+    if os.path.exists(q["img"]): st.image(q["img"], use_container_width=True)
+    st.markdown(f"<h4>{q['text']}</h4>", unsafe_allow_html=True)
+    
+    cols = st.columns(4)
+    if q["num"] == 7: labels, points = ["0~1", "2~3", "4~5", "6+"], [0, 1, 2, 3]
+    elif q["num"] in [2, 5, 8]: labels, points = ["드물다", "보통", "자주", "매우 자주"], [0, 1, 2, 3]
+    else: labels, points = ["매우 자주", "자주", "보통", "드물다"], [3, 2, 1, 0]
+    
+    for i, col in enumerate(cols):
+        with col:
+            if st.button(labels[i]): go_next(points[i])
 
-# 3. 결과 화면
 elif st.session_state.page == 'result':
-    total_score = st.session_state.score
-    
-    st.markdown(f"<h3 style='text-align: center; margin-bottom: 10px;'>당신의 총 점수는 {total_score}점 입니다.</h3>", unsafe_allow_html=True)
-
-    result_img_path = ""
-    if total_score >= 22:
-        result_img_path = "final4.png"
-    elif total_score >= 17:
-        result_img_path = "final3.jpg"
-    elif total_score >= 12:
-        result_img_path = "final2.jpg"
-    else:
-        result_img_path = "final1.jpg"
-
-    if os.path.exists(result_img_path):
-        res_image = Image.open(result_img_path)
-        st.image(res_image, use_container_width=True)
-    else:
-        st.error(f"결과 이미지({result_img_path})를 찾을 수 없습니다. 폴더에 이미지가 있는지 확인해주세요.")
-        
-    st.write("")
-    
-    if st.button("🔄 다시 검사하기", use_container_width=True):
-        restart_survey()
+    total = st.session_state.score
+    st.markdown(f"### 총 점수: {total}점")
+    res = "final4.png" if total >= 22 else "final3.jpg" if total >= 17 else "final2.jpg" if total >= 12 else "final1.jpg"
+    if os.path.exists(res): st.image(res, use_container_width=True)
+    if st.button("🔄 다시 하기"): 
+        st.session_state.score = 0
+        st.session_state.current_q = 1
+        st.session_state.page = 'start'
         st.rerun()
