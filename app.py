@@ -69,8 +69,8 @@ def restart_survey():
 
 # 1. 시작 화면
 if st.session_state.page == 'start':
-    if os.path.exists("start.jpg"):
-        image = Image.open("start.jpg")
+    if os.path.exists("start.png"):
+        image = Image.open("start.png")
         st.image(image, use_container_width=True)
     else:
         st.warning("start.jpg 파일이 없습니다. 이미지를 추가해주세요.")
