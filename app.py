@@ -5,10 +5,24 @@ import os
 # --- 페이지 기본 설정 ---
 st.set_page_config(page_title="ADHD 성향 설문", page_icon="🌱", layout="centered")
 
-# --- CSS 스타일링 (둥근 버튼 및 UI 조정) ---
+# --- CSS 스타일링 (배경색, 여백 최소화 및 버튼 디자인) ---
 st.markdown("""
     <style>
-    /* 버튼을 둥글게 만들고 텍스트를 가운데 정렬 */
+    /* 1. 앱 전체 배경색을 자연스러운 연한 아이보리 톤으로 변경 */
+    .stApp {
+        background-color: #FDFBF7;
+    }
+
+    /* 2. 상하좌우 흰색 여백을 대폭 줄여 화면을 꽉 차게 만듦 */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        max-width: 600px; /* 이미지가 한눈에 예쁘게 들어오는 너비 */
+    }
+
+    /* 3. 버튼을 둥글게 만들고 텍스트를 가운데 정렬 + 약간의 그림자 */
     div.stButton > button:first-child {
         border-radius: 30px;
         width: 100%;
@@ -18,15 +32,22 @@ st.markdown("""
         background-color: white;
         color: #333333;
         transition: all 0.3s ease;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.05);
     }
     div.stButton > button:first-child:hover {
         border-color: #8BC34A;
         color: #8BC34A;
         background-color: #F1F8E9;
     }
-    /* 상단 여백 줄이기 */
-    .block-container {
-        padding-top: 2rem;
+
+    /* 4. 이미지 주변의 미세한 기본 여백 제거 */
+    div[data-testid="stImage"] {
+        margin-bottom: -10px;
+    }
+    
+    /* 텍스트 요소들 색상을 배경과 어울리게 약간 부드럽게 조정 */
+    h1, h2, h3, p {
+        color: #2C2C2C !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -69,8 +90,8 @@ def restart_survey():
 
 # 1. 시작 화면
 if st.session_state.page == 'start':
-    if os.path.exists("start.png"):
-        image = Image.open("start.png")
+    if os.path.exists("start.jpg"):
+        image = Image.open("start.jpg")
         st.image(image, use_container_width=True)
     else:
         st.warning("start.jpg 파일이 없습니다. 이미지를 추가해주세요.")
@@ -87,7 +108,7 @@ elif st.session_state.page == 'question':
     q_index = st.session_state.current_q - 1
     current_question = questions[q_index]
     
-    st.subheader(current_question["text"])
+    st.markdown(f"<h4 style='text-align: center;'>{current_question['text']}</h4>", unsafe_allow_html=True)
     
     img_path = current_question["img"]
     if os.path.exists(img_path):
@@ -124,8 +145,7 @@ elif st.session_state.page == 'result':
     total_score = st.session_state.score
     
     # 점수 출력
-    st.markdown(f"<h3 style='text-align: center;'>당신의 총 점수는 {total_score}점 입니다.</h3>", unsafe_allow_html=True)
-    st.write("")
+    st.markdown(f"<h3 style='text-align: center; margin-bottom: 10px;'>당신의 총 점수는 {total_score}점 입니다.</h3>", unsafe_allow_html=True)
 
     # 점수 기준별 결과 이미지 매칭
     result_img_path = ""
